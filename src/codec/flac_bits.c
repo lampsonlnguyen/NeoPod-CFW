@@ -1,5 +1,20 @@
 #include "flac_bits.h"
 
+#if defined(_MSC_VER)
+#include <intrin.h>
+#endif
+
+static uint32_t count_leading_zeros(uint32_t value)
+{
+#if defined(_MSC_VER)
+    unsigned long index;
+    _BitScanReverse(&index, value);
+    return 31u - (uint32_t)index;
+#else
+    return (uint32_t)__builtin_clz(value);
+#endif
+}
+
 static const uint8_t CRC8_TABLE[256] = {
     0x00, 0x07, 0x0E, 0x09, 0x1C, 0x1B, 0x12, 0x15, 0x38, 0x3F, 0x36, 0x31, 0x24, 0x23, 0x2A, 0x2D,
     0x70, 0x77, 0x7E, 0x79, 0x6C, 0x6B, 0x62, 0x65, 0x48, 0x4F, 0x46, 0x41, 0x54, 0x53, 0x5A, 0x5D,
@@ -160,7 +175,7 @@ uint32_t flac_bits_read_unary(FlacBits *bits)
             bits->bits = 0;
             continue;
         }
-        uint32_t zeros = (uint32_t)__builtin_clz(bits->word);
+        uint32_t zeros = count_leading_zeros(bits->word);
         count += zeros;
         bits->word <<= zeros;
         bits->word <<= 1;

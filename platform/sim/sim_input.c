@@ -22,12 +22,27 @@ typedef struct TransitionQueue {
 
 static const KeyBinding KEY_BINDINGS[] = {
 #ifdef ECHO_NEO_SIM
-    {SDLK_UP, KEY_WHEEL_UP}, {SDLK_DOWN, KEY_WHEEL_DOWN}, {SDLK_RETURN, KEY_PLAY},
+    /* Neo: rotary wheel, center OK, volume up/down, power. */
+    {SDLK_UP, KEY_WHEEL_UP},
+    {SDLK_DOWN, KEY_WHEEL_DOWN},
+    {SDLK_RETURN, KEY_PLAY},
+    {SDLK_SPACE, KEY_PLAY},
+    {SDLK_EQUALS, KEY_VOLUME_UP},
+    {SDLK_PLUS, KEY_VOLUME_UP},
+    {SDLK_MINUS, KEY_VOLUME_DOWN},
+    {SDLK_p, KEY_POWER},
 #else
-    {SDLK_UP, KEY_VOLUME_DOWN}, {SDLK_DOWN, KEY_VOLUME_UP}, {SDLK_RETURN, KEY_PLAY},
+    /* Keep original EchoPod controls unchanged. */
+    {SDLK_UP, KEY_VOLUME_DOWN},
+    {SDLK_DOWN, KEY_VOLUME_UP},
+    {SDLK_RETURN, KEY_PLAY},
+    {SDLK_SPACE, KEY_PLAY},
+    {SDLK_m, KEY_MENU},
+    {SDLK_TAB, KEY_MENU},
+    {SDLK_BACKSPACE, KEY_BACK},
+    {SDLK_ESCAPE, KEY_BACK},
+    {SDLK_p, KEY_POWER},
 #endif
-    {SDLK_SPACE, KEY_PLAY},     {SDLK_m, KEY_MENU},         {SDLK_TAB, KEY_MENU},
-    {SDLK_BACKSPACE, KEY_BACK}, {SDLK_ESCAPE, KEY_BACK},    {SDLK_p, KEY_POWER},
 };
 
 static TransitionQueue queue;

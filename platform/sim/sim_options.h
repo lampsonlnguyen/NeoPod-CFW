@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 enum {
-    SIM_DEFAULT_SCALE = 3,
+    SIM_DEFAULT_SCALE = 2,
     SIM_MAX_SCALE = 8,
     SIM_DEFAULT_BATTERY_PERCENT = 80,
     SIM_FULL_BATTERY_PERCENT = 100

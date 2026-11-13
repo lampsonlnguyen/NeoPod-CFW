@@ -177,30 +177,136 @@ if IS_WINDOWS:
             k.CloseHandle(ov.hEvent)
 
 
+    # NEOPOD_WINUSB_PATCH_V1
+    # Rockchip vendor interface: query endpoints rather than opening \0 and \1 paths.
+    _winusb = c.WinDLL('winusb', use_last_error=True)
+
+    class _UsbInterfaceDescriptor(c.Structure):
+        _pack_ = 1
+        _fields_ = [
+            ('bLength', c.c_ubyte), ('bDescriptorType', c.c_ubyte),
+            ('bInterfaceNumber', c.c_ubyte), ('bAlternateSetting', c.c_ubyte),
+            ('bNumEndpoints', c.c_ubyte), ('bInterfaceClass', c.c_ubyte),
+            ('bInterfaceSubClass', c.c_ubyte), ('bInterfaceProtocol', c.c_ubyte),
+            ('iInterface', c.c_ubyte),
+        ]
+
+    class _WinUsbPipeInfo(c.Structure):
+        _fields_ = [
+            ('PipeType', c.c_int), ('PipeId', c.c_ubyte),
+            ('MaximumPacketSize', c.c_ushort), ('Interval', c.c_ubyte),
+        ]
+
+    _winusb.WinUsb_Initialize.argtypes = [w.HANDLE, c.POINTER(c.c_void_p)]
+    _winusb.WinUsb_Initialize.restype = w.BOOL
+    _winusb.WinUsb_Free.argtypes = [c.c_void_p]
+    _winusb.WinUsb_Free.restype = w.BOOL
+    _winusb.WinUsb_QueryInterfaceSettings.argtypes = [
+        c.c_void_p, c.c_ubyte, c.POINTER(_UsbInterfaceDescriptor)]
+    _winusb.WinUsb_QueryInterfaceSettings.restype = w.BOOL
+    _winusb.WinUsb_QueryPipe.argtypes = [
+        c.c_void_p, c.c_ubyte, c.c_ubyte, c.POINTER(_WinUsbPipeInfo)]
+    _winusb.WinUsb_QueryPipe.restype = w.BOOL
+    _winusb.WinUsb_ReadPipe.argtypes = [
+        c.c_void_p, c.c_ubyte, c.c_void_p, w.ULONG,
+        c.POINTER(w.ULONG), c.c_void_p]
+    _winusb.WinUsb_ReadPipe.restype = w.BOOL
+    _winusb.WinUsb_WritePipe.argtypes = [
+        c.c_void_p, c.c_ubyte, c.c_void_p, w.ULONG,
+        c.POINTER(w.ULONG), c.c_void_p]
+    _winusb.WinUsb_WritePipe.restype = w.BOOL
+    _winusb.WinUsb_SetPipePolicy.argtypes = [
+        c.c_void_p, c.c_ubyte, w.ULONG, w.ULONG, c.c_void_p]
+    _winusb.WinUsb_SetPipePolicy.restype = w.BOOL
+
     class RockusbWindows(RockusbProtocol):
         def __init__(self, path):
             super().__init__()
-            self.h = k.CreateFileW(path + '\\0', 0xc0000000, 3, None, 3, 0x40000000, None)
-            if self.h == c.c_void_p(-1).value:
-                raise c.WinError(c.get_last_error())
-            self.write_h = k.CreateFileW(path + '\\1', 0xc0000000, 3, None, 3, 0x40000000, None)
-            if self.write_h == c.c_void_p(-1).value:
-                k.CloseHandle(self.h)
-                raise c.WinError(c.get_last_error())
+            self.h = None
+            self.interface = c.c_void_p()
+            self.in_endpoint = None
+            self.out_endpoint = None
+            # Synchronous WinUSB read/write calls use NULL OVERLAPPED.
+            self.h = k.CreateFileW(
+                path,
+                0xC0000000,  # GENERIC_READ | GENERIC_WRITE
+                3,           # FILE_SHARE_READ | FILE_SHARE_WRITE
+                None,
+                3,           # OPEN_EXISTING
+                0x40000000,  # FILE_FLAG_OVERLAPPED
+                None
+            )
+            if self.h in (None, c.c_void_p(-1).value):
+                error = c.get_last_error()
+                self.h = None
+                raise c.WinError(error)
+            try:
+                if not _winusb.WinUsb_Initialize(self.h, c.byref(self.interface)):
+                    raise c.WinError(c.get_last_error())
+                descriptor = _UsbInterfaceDescriptor()
+                if not _winusb.WinUsb_QueryInterfaceSettings(
+                        self.interface, 0, c.byref(descriptor)):
+                    raise c.WinError(c.get_last_error())
+                if (descriptor.bInterfaceClass, descriptor.bInterfaceSubClass,
+                        descriptor.bInterfaceProtocol) != (0xff, 6, 5):
+                    raise RuntimeError('Unexpected USB interface class/subclass/protocol')
+                for index in range(descriptor.bNumEndpoints):
+                    pipe = _WinUsbPipeInfo()
+                    if not _winusb.WinUsb_QueryPipe(self.interface, 0, index, c.byref(pipe)):
+                        raise c.WinError(c.get_last_error())
+                    if pipe.PipeType != 2:  # UsbdPipeTypeBulk
+                        continue
+                    if pipe.PipeId & 0x80:
+                        self.in_endpoint = pipe.PipeId
+                    else:
+                        self.out_endpoint = pipe.PipeId
+                if self.in_endpoint is None or self.out_endpoint is None:
+                    raise RuntimeError('Rockusb USB bulk IN/OUT endpoints not found')
+                # Avoid hanging indefinitely on a stalled pipe.
+                timeout = w.ULONG(8000)
+                for endpoint in (self.in_endpoint, self.out_endpoint):
+                    if not _winusb.WinUsb_SetPipePolicy(
+                            self.interface, endpoint, 3,
+                            c.sizeof(timeout), c.byref(timeout)):
+                        raise c.WinError(c.get_last_error())
+                print(f'WinUSB ready: IN=0x{self.in_endpoint:02x}, OUT=0x{self.out_endpoint:02x}')
+            except BaseException:
+                self.close()
+                raise
 
         def _read(self, length):
-            return transfer(self.h, length, write=False)
+            if length < 0:
+                raise ValueError('Negative read length')
+            if length == 0:
+                return b''
+            buf = c.create_string_buffer(length)
+            count = w.ULONG()
+            if not _winusb.WinUsb_ReadPipe(
+                    self.interface, self.in_endpoint, buf, length,
+                    c.byref(count), None):
+                raise c.WinError(c.get_last_error())
+            return buf.raw[:count.value]
 
         def _write(self, data):
-            transfer(self.write_h, data, write=True)
+            data = bytes(data)
+            buf = c.create_string_buffer(data, len(data))
+            count = w.ULONG()
+            if not _winusb.WinUsb_WritePipe(
+                    self.interface, self.out_endpoint, buf, len(data),
+                    c.byref(count), None):
+                raise c.WinError(c.get_last_error())
+            if count.value != len(data):
+                raise RuntimeError(f'Short USB write: {count.value} / {len(data)}')
 
         def close(self):
-            for name in ('h', 'write_h'):
-                handle = getattr(self, name, None)
-                if handle is not None:
-                    setattr(self, name, None)
-                    k.CloseHandle(handle)
-
+            interface = getattr(self, 'interface', None)
+            if interface is not None and interface.value:
+                _winusb.WinUsb_Free(interface)
+                self.interface = c.c_void_p()
+            handle = getattr(self, 'h', None)
+            if handle not in (None, c.c_void_p(-1).value):
+                k.CloseHandle(handle)
+                self.h = None
 
     def device_path():
         base = r'SYSTEM\CurrentControlSet\Control\DeviceClasses\{a5dcbf10-6530-11d2-901f-00c04fb951ed}'
@@ -219,17 +325,15 @@ if IS_WINDOWS:
 
 
     def recovery_interface_present(path):
-        # Registry entries survive unplugging; opening the actual recovery pipe
-        # checks whether the live interface is still available. No I/O is sent.
-        handle = k.CreateFileW(path + '\\0', 0xc0000000, 3, None, 3, 0x40000000, None)
-        if handle == c.c_void_p(-1).value:
+        # Probe the WinUSB interface itself; avoid legacy endpoint suffixes.
+        handle = k.CreateFileW(path, 0, 3, None, 3, 0, None)
+        if handle in (None, c.c_void_p(-1).value):
             error = c.get_last_error()
-            if error in (2, 3, 1167):
+            if error in (2, 3, 5, 1167):
                 return False
             raise c.WinError(error)
         k.CloseHandle(handle)
         return True
-
 
     def request_device_eject(instance_id):
         """Ask Windows PnP to safely remove the USB parent, covering both LUNs."""

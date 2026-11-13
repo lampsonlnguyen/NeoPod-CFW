@@ -1,6 +1,8 @@
 #include "app/app.h"
 
 #include <stddef.h>
+#include <stdio.h>
+#include <stdio.h>
 
 #include "app_internal.h"
 #include "app_screens.h"
@@ -124,12 +126,10 @@ static const FadeTiming SPLASH_TIMING = {.fade_ms = 600, .hold_ms = 500, .rising
 static const uint32_t SCREEN_ON_CLOCK_MHZ = 200;
 static const uint32_t IDLE_CLOCK_MHZ = 96;
 static const FadeTiming GOODBYE_TIMING = {.fade_ms = 600, .hold_ms = 400, .rising = false};
-#if defined(ECHO_BOARD_NEO) || defined(ECHO_NEO_SIM)
+
 static const char SPLASH_TEXT[] = "NeoPod";
-#else
-static const char SPLASH_TEXT[] = "EchoPod";
-#endif
-static const char GOODBYE_TEXT[] = "NeoPod";
+
+static const char GOODBYE_TEXT[] = "Shutting Down";
 static const char BATTERY_LOW_TEXT[] = "Battery low";
 static Color strip_pixels[HAL_DISPLAY_WIDTH * STRIP_HEIGHT];
 static uint32_t row_hashes[HAL_DISPLAY_HEIGHT];
@@ -308,6 +308,22 @@ static void show_now_playing(uint32_t now_ms)
     }
 }
 
+#if defined(ECHO_BOARD_NEO) || defined(ECHO_NEO_SIM)
+/* toast_show holds a pointer, so this message must outlive the function call. */
+static char volume_notice_text[32];
+
+static void change_volume_with_notice(int delta)
+{
+    player_change_volume(&app.player, delta);
+    unsigned level = (unsigned)player_status(&app.player).volume;
+    (void)snprintf(volume_notice_text, sizeof volume_notice_text,
+                   "Volume %u/%u", level, (unsigned)HAL_AUDIO_VOLUME_MAX);
+    uint32_t now_ms = hal_clock_milliseconds();
+    toast_show(&app.toast, volume_notice_text, now_ms);
+    app.toast.until_ms = now_ms + 1500u;
+}
+#endif
+
 static void run_background(KeyEvent event)
 {
     switch (now_playing_command_for(event, false)) {
@@ -321,10 +337,18 @@ static void run_background(KeyEvent event)
         player_skip(&app.player, -1);
         break;
     case NOW_PLAYING_VOLUME_UP:
+#if defined(ECHO_BOARD_NEO) || defined(ECHO_NEO_SIM)
+        change_volume_with_notice(1);
+#else
         player_change_volume(&app.player, 1);
+#endif
         break;
     case NOW_PLAYING_VOLUME_DOWN:
+#if defined(ECHO_BOARD_NEO) || defined(ECHO_NEO_SIM)
+        change_volume_with_notice(-1);
+#else
         player_change_volume(&app.player, -1);
+#endif
         break;
     default:
         break;
@@ -373,7 +397,16 @@ static void dispatch_event(KeyEvent event, uint32_t now_ms)
             (mode == SIDE_BUTTONS_HYBRID && event.gesture == KEY_GESTURE_PRESS)) {
             player_skip(&app.player, direction);
         } else {
-            player_change_volume(&app.player, direction);
+            change_volume_with_notice(direction);
+            /* NEOPOD_VOLUME_INDICATOR_V1 */
+            if (app.power.display_on) {
+                static char volume_text[32];
+                unsigned volume = (unsigned)player_status(&app.player).volume;
+                (void)snprintf(volume_text, sizeof volume_text, "Volume: %u/%u",
+                               volume, (unsigned)HAL_AUDIO_VOLUME_MAX);
+                toast_show(&app.toast, volume_text, now_ms);
+                app.toast.until_ms = now_ms + 1500u;
+            }
         }
         return;
     }

@@ -11,7 +11,11 @@
 #include "playback/up_next.h"
 
 enum {
+#if defined(ECHO_BOARD_NEO) || defined(ECHO_NEO_SIM)
+    PLAYER_DEFAULT_VOLUME = 29,
+#else
     PLAYER_DEFAULT_VOLUME = 12,
+#endif
     PLAYER_RESTART_THRESHOLD_MS = 3000,
     PLAYER_SAVE_INTERVAL_MS = 15000,
     PLAYER_PATH_CAPACITY = 260

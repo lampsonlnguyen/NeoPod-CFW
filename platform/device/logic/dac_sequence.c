@@ -296,7 +296,12 @@ uint8_t dac_volume_value(uint8_t level, DacCurve curve)
     }
     uint32_t capped = level < DAC_VOLUME_LEVELS ? level : DAC_VOLUME_LEVELS;
     uint32_t top = curve == DAC_CURVE_BALANCED ? BALANCED_TOP_VOLUME_VALUE : TOP_VOLUME_VALUE;
+#ifdef ECHO_BOARD_NEO
+    /* 120 distinct levels, same register endpoints as the old 50-level curve. */
+    return (uint8_t)(top - capped);
+#else
     return (uint8_t)(top - VOLUME_STEP_NUMERATOR * capped / VOLUME_STEP_DENOMINATOR);
+#endif
 }
 
 void dac_output_on(const DacBus *bus, uint8_t volume)

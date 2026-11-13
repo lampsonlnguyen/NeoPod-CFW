@@ -132,8 +132,12 @@ static bool read_option(ArgumentCursor *cursor, SimOptions *options)
 
 bool sim_options_parse(int argument_count, char **arguments, SimOptions *options)
 {
-    *options =
-        (SimOptions){.scale = SIM_DEFAULT_SCALE, .battery_percent = SIM_DEFAULT_BATTERY_PERCENT};
+    *options = (SimOptions){
+        .scale = SIM_DEFAULT_SCALE,
+        .battery_percent = SIM_DEFAULT_BATTERY_PERCENT,
+        .card_directory = "C:/Users/Lam/Music/NeoPod",
+        .system_directory = "build/system"
+    };
     ArgumentCursor cursor = {.count = argument_count, .arguments = arguments, .index = 1};
     for (; cursor.index < argument_count; cursor.index++) {
         if (!read_option(&cursor, options)) {

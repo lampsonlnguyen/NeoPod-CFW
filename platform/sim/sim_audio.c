@@ -300,6 +300,39 @@ void hal_audio_set_output(HalAudioOutput output)
     unlock();
 }
 
+/* Simulator audio-control implementations.
+ * DSP settings are stored but not applied to SDL playback.
+ */
+
+static ReplayGainMode sim_replay_gain_mode;
+static bool sim_dsp_bypass;
+
+void hal_audio_set_eq(bool enabled, const int8_t *gains)
+{
+    (void)enabled;
+    (void)gains;
+}
+
+void hal_audio_set_replay_gain_mode(ReplayGainMode mode)
+{
+    sim_replay_gain_mode = mode;
+}
+
+ReplayGainMode hal_audio_replay_gain_mode(void)
+{
+    return sim_replay_gain_mode;
+}
+
+void hal_audio_set_dsp_bypass(bool bypass)
+{
+    sim_dsp_bypass = bypass;
+}
+
+bool hal_audio_dsp_bypass(void)
+{
+    return sim_dsp_bypass;
+}
+
 static bool dma_tone_running;
 
 void hal_audio_service(void)

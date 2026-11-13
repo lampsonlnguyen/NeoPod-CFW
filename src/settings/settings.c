@@ -5,7 +5,7 @@
 #include "core/hash.h"
 
 enum {
-    VERSION = 8,
+    VERSION = 9,
     FIFTH_VERSION = 5,
     FOURTH_VERSION = 4,
     THIRD_VERSION = 3,
@@ -38,7 +38,11 @@ enum {
     CHECKSUM_FIELD = 252,
     DEFAULT_BRIGHTNESS = 7,
     DEFAULT_TIMEOUT_OPTION = 2,
+#if defined(ECHO_BOARD_NEO) || defined(ECHO_NEO_SIM)
+    DEFAULT_VOLUME = 29,
+#else
     DEFAULT_VOLUME = 12,
+#endif
     DEFAULT_AUTO_OFF_OPTION = 2,
     MILLISECONDS_PER_MINUTE = 60000,
     MILLISECONDS_PER_SECOND = 1000,
@@ -280,6 +284,19 @@ static bool header_valid(const uint8_t *bytes, uint32_t length)
            get_u32(bytes, CHECKSUM_FIELD) == checksum_of(bytes, CHECKSUM_FIELD);
 }
 
+static uint8_t decode_saved_volume(uint8_t level, uint8_t version)
+{
+#if defined(ECHO_BOARD_NEO) || defined(ECHO_NEO_SIM)
+    if (version < 9) {
+        /* Preserve the original 0..50 position when upgrading to 0..120. */
+        return (uint8_t)(((uint32_t)level * 120u + 25u) / 50u);
+    }
+#else
+    (void)version;
+#endif
+    return level;
+}
+
 static bool values_valid(const uint8_t *bytes)
 {
     if (bytes[BRIGHTNESS_FIELD] < SETTINGS_BRIGHTNESS_MIN ||
@@ -287,7 +304,7 @@ static bool values_valid(const uint8_t *bytes)
         bytes[TIMEOUT_FIELD] >= SCREEN_TIMEOUT_OPTION_COUNT ||
         bytes[GAIN_FIELD] >= GAIN_LEVEL_COUNT || bytes[OUTPUT_FIELD] >= OUTPUT_JACK_COUNT ||
         bytes[START_FIELD] >= START_SCREEN_COUNT || bytes[SHUFFLE_FIELD] >= SHUFFLE_MODE_COUNT ||
-        bytes[REPEAT_FIELD] >= REPEAT_MODE_COUNT || bytes[VOLUME_FIELD] > SETTINGS_VOLUME_MAX ||
+        bytes[REPEAT_FIELD] >= REPEAT_MODE_COUNT || bytes[VOLUME_FIELD] > (bytes[VERSION_FIELD] >= 9 ? SETTINGS_VOLUME_MAX : 50) ||
         bytes[AUTO_OFF_FIELD] >= AUTO_OFF_OPTION_COUNT) {
         return false;
     }
@@ -338,7 +355,7 @@ bool settings_decode(const uint8_t *bytes, uint32_t length, Settings *settings)
         .start_screen = (StartScreen)bytes[START_FIELD],
         .shuffle = (ShuffleMode)bytes[SHUFFLE_FIELD],
         .repeat = (RepeatMode)bytes[REPEAT_FIELD],
-        .volume = bytes[VOLUME_FIELD],
+        .volume = decode_saved_volume(bytes[VOLUME_FIELD], version),
         .auto_off = version < 2 ? (uint8_t)DEFAULT_AUTO_OFF_OPTION : bytes[AUTO_OFF_FIELD],
         .usb_mode = version < 3 ? USB_MODE_STORAGE : (UsbMode)bytes[USB_MODE_FIELD],
         .dac_volume = version < 4 ? (uint8_t)SETTINGS_DEFAULT_DAC_VOLUME : bytes[DAC_VOLUME_FIELD],

@@ -14,14 +14,28 @@ enum {
     MILLISECONDS_PER_SECOND = 1000
 };
 
+
+
+#if defined(_MSC_VER)
+#include <intrin.h>
+#endif
+
 static void publish(void)
 {
+#if defined(_MSC_VER)
+    _ReadWriteBarrier();
+#else
     __atomic_thread_fence(__ATOMIC_RELEASE);
+#endif
 }
 
 static void observe(void)
 {
+#if defined(_MSC_VER)
+    _ReadWriteBarrier();
+#else
     __atomic_thread_fence(__ATOMIC_ACQUIRE);
+#endif
 }
 
 static uint32_t smaller(uint32_t a, uint32_t b)

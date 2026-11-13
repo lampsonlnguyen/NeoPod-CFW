@@ -39,10 +39,12 @@ static const MusicEntry MUSIC_ENTRIES[MUSIC_ITEM_COUNT] = {
     {"Favorites", MUSIC_FAVORITES, BROWSE_ALBUMS},
 };
 
+#if !defined(ECHO_BOARD_NEO) && !defined(ECHO_NEO_SIM)
 static bool player_has_track(const void *context)
 {
     return player_status(context).has_track;
 }
+#endif
 
 MenuItem app_screens_open_item(const char *label, Screen *target)
 {
@@ -144,12 +146,15 @@ static void build_settings(AppScreens *screens, AppScreensContext context)
     settings_screens_init(&screens->settings, settings, context.theme);
 }
 
+#if !defined(ECHO_BOARD_NEO) && !defined(ECHO_NEO_SIM)
 static bool shelf_present(const void *context)
 {
     const BrowseEntry *entry = context;
     return entry->present;
 }
+#endif
 
+#if !defined(ECHO_BOARD_NEO) && !defined(ECHO_NEO_SIM)
 static MenuItem shelf_item(AppScreens *screens, AppScreensContext context, SpokenKind shelf)
 {
     uint16_t folder = 0;
@@ -169,45 +174,72 @@ static MenuItem shelf_item(AppScreens *screens, AppScreensContext context, Spoke
                       .shown = shelf_present,
                       .shown_context = entry};
 }
+#endif
 
 static void build_home(AppScreens *screens, AppScreensContext context)
 {
     const Theme *theme = context.theme;
+
 #if defined(ECHO_BOARD_NEO) || defined(ECHO_NEO_SIM)
-    screens->home_items[0] = app_screens_open_item("Now Playing", &screens->now_playing.screen);
-    screens->home_items[0].shown = player_has_track;
-    screens->home_items[0].shown_context = context.player;
-    screens->home_items[1] = app_screens_open_item("Music", &screens->music.screen);
-    screens->home_items[2] = shelf_item(screens, context, SPOKEN_AUDIOBOOK);
-    screens->home_items[3] = shelf_item(screens, context, SPOKEN_PODCAST);
-    screens->home_items[4] = app_screens_open_item("Settings", &screens->settings.menu.screen);
+    screens->home_items[0] =
+        app_screens_open_item("Now Playing",
+                              &screens->now_playing.screen);
+
+    /* Place Music items directly on the home screen. */
+    for (int index = 0; index < MUSIC_ITEM_COUNT; ++index) {
+        screens->home_items[index + 1] =
+            screens->music_items[index];
+    }
+
+    screens->home_items[MUSIC_ITEM_COUNT + 1] =
+        app_screens_open_item("Settings",
+                              &screens->settings.menu.screen);
+
 #ifdef ECHO_JACK_DIAGNOSTICS
-    screens->home_items[5] = app_screens_open_item("Diagnostics", &screens->diagnostics.screen);
+    screens->home_items[MUSIC_ITEM_COUNT + 2] =
+        app_screens_open_item("Diagnostics",
+                              &screens->diagnostics.screen);
 #endif
+
 #else
-    screens->home_items[0] = app_screens_open_item("Music", &screens->music.screen);
-    screens->home_items[1] = shelf_item(screens, context, SPOKEN_AUDIOBOOK);
-    screens->home_items[2] = shelf_item(screens, context, SPOKEN_PODCAST);
-    screens->home_items[3] = app_screens_open_item("Settings", &screens->settings.menu.screen);
-    screens->home_items[4] = app_screens_open_item("Diagnostics", &screens->diagnostics.screen);
-    screens->home_items[5] = app_screens_open_item("Now Playing", &screens->now_playing.screen);
+    screens->home_items[0] =
+        app_screens_open_item("Music", &screens->music.screen);
+    screens->home_items[1] =
+        shelf_item(screens, context, SPOKEN_AUDIOBOOK);
+    screens->home_items[2] =
+        shelf_item(screens, context, SPOKEN_PODCAST);
+    screens->home_items[3] =
+        app_screens_open_item("Settings", &screens->settings.menu.screen);
+    screens->home_items[4] =
+        app_screens_open_item("Diagnostics", &screens->diagnostics.screen);
+    screens->home_items[5] =
+        app_screens_open_item("Now Playing", &screens->now_playing.screen);
     screens->home_items[5].shown = player_has_track;
     screens->home_items[5].shown_context = context.player;
 #endif
-    home_art_init(&screens->home_art, context.covers, context.store, context.player, theme);
+
+    home_art_init(&screens->home_art, context.covers,
+                  context.store, context.player, theme);
+
 #if defined(ECHO_BOARD_NEO) || defined(ECHO_NEO_SIM)
     const char *title = "NeoPod";
 #else
     const char *title = "EchoPod";
 #endif
-    MenuConfig home = {.title = title,
-                       .items = screens->home_items,
-                       .item_count = HOME_ITEM_COUNT,
-                       .theme = theme,
-                       .panel = {.width = HOME_ART_WIDTH,
-                                 .update = home_art_update,
-                                 .draw = home_art_draw,
-                                 .context = &screens->home_art}};
+
+    MenuConfig home = {
+        .title = title,
+        .items = screens->home_items,
+        .item_count = HOME_ITEM_COUNT,
+        .theme = theme,
+        .panel = {
+            .width = HOME_ART_WIDTH,
+            .update = home_art_update,
+            .draw = home_art_draw,
+            .context = &screens->home_art
+        }
+    };
+
     menu_screen_init(&screens->home, home);
 }
 
@@ -237,13 +269,21 @@ Screen *app_screens_init(AppScreens *screens, AppScreensContext context)
 static int music_path(AppScreens *screens, int entry, Screen **path)
 {
     BrowseEntry *browse = &screens->browse_entries[entry];
+
     if (!browse->store->available) {
         return 0;
     }
+
+#if defined(ECHO_BOARD_NEO) || defined(ECHO_NEO_SIM)
+    list_view_select(&screens->home.list, entry + 1, 0);
+    path[0] = browse_screen_for(browse);
+    return path[0] != NULL ? 1 : 0;
+#else
     list_view_select(&screens->music.list, entry, 0);
     path[0] = &screens->music.screen;
     path[1] = browse_screen_for(browse);
     return path[1] != NULL ? START_PATH_CAPACITY : 1;
+#endif
 }
 
 int app_screens_start_path(AppScreens *screens, StartScreen start, Screen **path)

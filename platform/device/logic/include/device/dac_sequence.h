@@ -33,7 +33,11 @@ typedef enum DacCurve {
 enum {
     DAC_LEFT_ADDRESS = 0x60,
     DAC_RIGHT_ADDRESS = 0x66,
+#ifdef ECHO_BOARD_NEO
+    DAC_VOLUME_LEVELS = 120,
+#else
     DAC_VOLUME_LEVELS = 50,
+#endif
     DAC_VOLUME_MUTED = 0xFF
 };
 

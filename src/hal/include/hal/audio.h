@@ -6,7 +6,11 @@
 #include "core/replay_gain.h"
 
 enum {
+#if defined(ECHO_BOARD_NEO) || defined(ECHO_NEO_SIM)
+    HAL_AUDIO_VOLUME_MAX = 120
+#else
     HAL_AUDIO_VOLUME_MAX = 50
+#endif
 };
 
 typedef enum HalAudioState {
