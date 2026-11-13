@@ -175,7 +175,7 @@ static void battery_bench_save(uint32_t now_ms)
     static char csv[8192];
     StringBuilder b = string_builder_make(csv, sizeof csv);
     string_builder_append(&b,
-        "elapsed_s,battery_mv,battery_pct,cpu_mhz,underruns,output_underruns\\n");
+        "elapsed_s,battery_mv,battery_pct,cpu_mhz,underruns,output_underruns\n");
     for (unsigned i = 0; i < bench_count; ++i) {
         const BatteryBenchSample *s = &bench_samples[i];
         battery_bench_append_uint(&b, s->elapsed_s);
@@ -189,7 +189,7 @@ static void battery_bench_save(uint32_t now_ms)
         battery_bench_append_uint(&b, s->underruns);
         string_builder_append_char(&b, ',');
         battery_bench_append_uint(&b, s->output_underruns);
-        string_builder_append_char(&b, '\\n');
+        string_builder_append_char(&b, '\n');
     }
     if (!b.overflowed) {
         (void)hal_file_write("/.echo/battery-bench.csv", csv, (uint32_t)b.length);
