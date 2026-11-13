@@ -25,6 +25,9 @@
 #include "hal/display.h"
 #include "hal/input.h"
 #include "hal/power.h"
+#ifdef ECHO_BATTERY_BENCHMARK
+#include "hal/storage.h"
+#endif
 #include "library_rescan.h"
 #include "library_store.h"
 #include "lock_screen.h"
@@ -113,6 +116,87 @@ typedef struct AppState {
 } AppState;
 
 static AppState app;
+
+#ifdef ECHO_BATTERY_BENCHMARK
+/* Optional wired FLAC battery benchmark. No writes during playback:
+ * keep 10-minute samples in RAM and export on orderly shutdown.
+ * 144 samples cover up to 24 hours. */
+enum { BENCH_INTERVAL_MS = 600000u, BENCH_MAX_SAMPLES = 144 };
+typedef struct {
+    uint32_t elapsed_s;
+    uint32_t clock_mhz;
+    uint32_t underruns;
+    uint32_t output_underruns;
+    uint32_t battery_mv;
+    uint32_t battery_pct;
+} BatteryBenchSample;
+static BatteryBenchSample bench_samples[BENCH_MAX_SAMPLES];
+static uint32_t bench_started_ms;
+static uint32_t bench_last_ms;
+static unsigned bench_count;
+static bool bench_started;
+
+static void battery_bench_sample(uint32_t now_ms, bool force)
+{
+    if (app.usb_power || app.display_on ||
+        player_status(&app.player).state != PLAYER_PLAYING) {
+        return;
+    }
+    if (!bench_started) {
+        bench_started = true;
+        bench_started_ms = now_ms;
+        bench_last_ms = now_ms;
+    } else if (!force && (uint32_t)(now_ms - bench_last_ms) < BENCH_INTERVAL_MS) {
+        return;
+    }
+    if (bench_count >= BENCH_MAX_SAMPLES) return;
+    HalBattery battery = hal_power_battery();
+    if (!battery.known) return;
+    HalAudioStats audio = hal_audio_stats();
+    BatteryBenchSample *s = &bench_samples[bench_count++];
+    s->elapsed_s = (uint32_t)(now_ms - bench_started_ms) / 1000u;
+    s->clock_mhz = hal_system_clock_mhz();
+    s->underruns = audio.underruns;
+    s->output_underruns = audio.output_underruns;
+    s->battery_mv = battery.millivolts;
+    s->battery_pct = battery.percent;
+    bench_last_ms = now_ms;
+}
+
+static void battery_bench_append_uint(StringBuilder *b, uint32_t n)
+{
+    string_builder_append_unsigned(b, n);
+}
+
+static void battery_bench_save(uint32_t now_ms)
+{
+    if (!bench_started) return;
+    battery_bench_sample(now_ms, true);
+    static char csv[8192];
+    StringBuilder b = string_builder_make(csv, sizeof csv);
+    string_builder_append(&b,
+        "elapsed_s,battery_mv,battery_pct,cpu_mhz,underruns,output_underruns\\n");
+    for (unsigned i = 0; i < bench_count; ++i) {
+        const BatteryBenchSample *s = &bench_samples[i];
+        battery_bench_append_uint(&b, s->elapsed_s);
+        string_builder_append_char(&b, ',');
+        battery_bench_append_uint(&b, s->battery_mv);
+        string_builder_append_char(&b, ',');
+        battery_bench_append_uint(&b, s->battery_pct);
+        string_builder_append_char(&b, ',');
+        battery_bench_append_uint(&b, s->clock_mhz);
+        string_builder_append_char(&b, ',');
+        battery_bench_append_uint(&b, s->underruns);
+        string_builder_append_char(&b, ',');
+        battery_bench_append_uint(&b, s->output_underruns);
+        string_builder_append_char(&b, '\\n');
+    }
+    if (!b.overflowed) {
+        (void)hal_file_write("/.echo/battery-bench.csv", csv, (uint32_t)b.length);
+    }
+}
+#endif
+
 #if defined(ECHO_BOARD_NEO) || defined(ECHO_NEO_SIM)
 /* NEOPOD_SELECT_GESTURES_V1 */
 static uint8_t ok_clicks;
@@ -199,6 +283,9 @@ static void save_settings(void)
 
 static void save_session(void)
 {
+#ifdef ECHO_BATTERY_BENCHMARK
+    battery_bench_save(hal_clock_milliseconds());
+#endif
     spoken_store_flush(&app.spoken, player_status(&app.player), hal_clock_milliseconds());
     player_save(&app.player);
     save_settings();
@@ -933,6 +1020,9 @@ void app_step(void)
         use_wanted_clock();
     }
     toast_update(&app.toast, now_ms);
+#ifdef ECHO_BATTERY_BENCHMARK
+    battery_bench_sample(now_ms, false);
+#endif
     update_screen(now_ms);
     frame_stats_record(&app.update_stats, hal_clock_microseconds() - started_us);
     if (app.display_on) {
