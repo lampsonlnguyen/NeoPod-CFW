@@ -1,8 +1,6 @@
 #include "app/app.h"
 
 #include <stddef.h>
-#include <stdio.h>
-#include <stdio.h>
 
 #include "app_internal.h"
 #include "app_screens.h"
@@ -316,8 +314,11 @@ static void change_volume_with_notice(int delta)
 {
     player_change_volume(&app.player, delta);
     unsigned level = (unsigned)player_status(&app.player).volume;
-    (void)snprintf(volume_notice_text, sizeof volume_notice_text,
-                   "Volume %u/%u", level, (unsigned)HAL_AUDIO_VOLUME_MAX);
+    StringBuilder volume_builder = string_builder_make(volume_notice_text, sizeof volume_notice_text);
+    string_builder_append(&volume_builder, "Volume ");
+    string_builder_append_unsigned(&volume_builder, (uint32_t)level);
+    string_builder_append(&volume_builder, "/");
+    string_builder_append_unsigned(&volume_builder, HAL_AUDIO_VOLUME_MAX);
     uint32_t now_ms = hal_clock_milliseconds();
     toast_show(&app.toast, volume_notice_text, now_ms);
     app.toast.until_ms = now_ms + 1500u;
@@ -402,8 +403,11 @@ static void dispatch_event(KeyEvent event, uint32_t now_ms)
             if (app.power.display_on) {
                 static char volume_text[32];
                 unsigned volume = (unsigned)player_status(&app.player).volume;
-                (void)snprintf(volume_text, sizeof volume_text, "Volume: %u/%u",
-                               volume, (unsigned)HAL_AUDIO_VOLUME_MAX);
+                StringBuilder volume_builder = string_builder_make(volume_text, sizeof volume_text);
+                string_builder_append(&volume_builder, "Volume: ");
+                string_builder_append_unsigned(&volume_builder, (uint32_t)volume);
+                string_builder_append(&volume_builder, "/");
+                string_builder_append_unsigned(&volume_builder, HAL_AUDIO_VOLUME_MAX);
                 toast_show(&app.toast, volume_text, now_ms);
                 app.toast.until_ms = now_ms + 1500u;
             }
