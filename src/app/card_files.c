@@ -27,6 +27,9 @@ typedef struct CardFile {
 } CardFile;
 
 static const CardFile CARD_FILES[] = {
+#ifdef ECHO_BATTERY_BENCHMARK
+    {"/.echo/battery-bench.csv", 8192},
+#endif
     {BLUETOOTH_STORE_PATH, SMALL_FILE_BYTES},
     {"/.echo/neo-bt.txt", SMALL_FILE_BYTES},
 #ifdef ECHO_BOARD_NEO
