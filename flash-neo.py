@@ -753,6 +753,11 @@ def default_image():
     root = application_root()
     if (root / 'NeoPod' / 'release').is_dir():
         root = root / 'NeoPod'
+    # Sandbox builds use a stable filename. Prefer it to archived numbered images.
+    for directory in (root / 'release', root):
+        latest = directory / 'NeoPod.IMG'
+        if latest.is_file():
+            return latest.resolve()
     candidates = []
     for directory in (root / 'release', root):
         for file in directory.glob('DP3_V*.IMG'):
