@@ -399,18 +399,6 @@ static void dispatch_event(KeyEvent event, uint32_t now_ms)
             player_skip(&app.player, direction);
         } else {
             change_volume_with_notice(direction);
-            /* NEOPOD_VOLUME_INDICATOR_V1 */
-            if (app.power.display_on) {
-                static char volume_text[32];
-                unsigned volume = (unsigned)player_status(&app.player).volume;
-                StringBuilder volume_builder = string_builder_make(volume_text, sizeof volume_text);
-                string_builder_append(&volume_builder, "Volume: ");
-                string_builder_append_unsigned(&volume_builder, (uint32_t)volume);
-                string_builder_append(&volume_builder, "/");
-                string_builder_append_unsigned(&volume_builder, HAL_AUDIO_VOLUME_MAX);
-                toast_show(&app.toast, volume_text, now_ms);
-                app.toast.until_ms = now_ms + 1500u;
-            }
         }
         return;
     }
