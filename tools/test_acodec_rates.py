@@ -21,8 +21,8 @@ class AcocodecRateConfigurationTest(unittest.TestCase):
         for rate, (mclk, expected) in REFERENCE.items():
             with self.subTest(rate=rate):
                 pattern = (
-                    rf"\\{{\\s*{rate}\\s*,\\s*{mclk}\\s*,\\s*"
-                    rf"\\{{([^}}]+)\\}}\\s*,\\s*\\d+\\s*\\}}"
+                    r"\\{\\s*" + str(rate) + r"\\s*,\\s*" + str(mclk)
+                    + r"\\s*,\\s*\\{([^}]+)\\}\\s*,\\s*\\d+\\s*\\}"
                 )
                 found = re.findall(pattern, source)
                 self.assertEqual(len(found), 1, f"Expected exactly one {rate}Hz rate row")
