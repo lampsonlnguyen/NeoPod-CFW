@@ -49,8 +49,7 @@ Run-Checked $objcopy @('-O', 'binary', "$build/platform/device/echo_core1_opus.e
 
 Write-Host "Packaging latest NeoPod sandbox firmware..."
 Run-Checked $FlasherPython @("$repoRoot/tools/build_boot_image.py", "$repoRoot/assets/boot.png", "$out/sd-card/.echo/boot.rgb565")
-Run-Checked $FlasherPython @("$repoRoot/tools/build_neo_image.py", '--version', '183',
-    '--elf', "$build/platform/device/echo_device.elf", '--output', "$out/NeoPod.IMG", '--no-rknano-copy',
+Run-Checked $FlasherPython @("$repoRoot/tools/build_neo_image.py", '--elf', "$build/platform/device/echo_device.elf", '--output', "$out/NeoPod.IMG", '--no-rknano-copy',
     '--overlay', "$build/platform/device/echo_rescan_overlay.elf",
     '--core1-mp3', "$build/platform/device/core1_mp3.bin",
     '--core1-flac', "$build/platform/device/core1.bin",
