@@ -22,6 +22,7 @@ def build():
     global ELF_PATH, OUT_IMG
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version', type=int, default=138)
+    parser.add_argument('--no-rknano-copy', action='store_true', help='Do not emit duplicate RKNANOFW.IMG')
     parser.add_argument('--sd-output', type=Path)
     parser.add_argument('--elf', type=Path, default=ELF_PATH)
     parser.add_argument('--output', type=Path, default=OUT_IMG)
@@ -120,10 +121,11 @@ def build():
         raise ValueError('Generated image integrity check failed')
     OUT_IMG.parent.mkdir(parents=True, exist_ok=True)
     OUT_IMG.write_bytes(im.d)
-    rknano_img = OUT_IMG.parent / "RKNANOFW.IMG"
-    rknano_img.write_bytes(im.d)
     print(f"Successfully generated Neo firmware image: {OUT_IMG}")
-    print(f"Also written: {rknano_img}")
+    if not args.no_rknano_copy:
+        rknano_img = OUT_IMG.parent / "RKNANOFW.IMG"
+        rknano_img.write_bytes(im.d)
+        print(f"Also written: {rknano_img}")
     print(f"Size: {len(im.d)} bytes (0x{len(im.d):x})")
     print(f"CRC-32: 0x{im.crc_stored():08x} (calc: 0x{im.crc_calc():08x})")
     print(f"SHA-256: {hashlib.sha256(im.d).hexdigest()}")
