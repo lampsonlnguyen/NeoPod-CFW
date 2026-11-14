@@ -13,7 +13,7 @@ sys.path.insert(0, str(REPO / "third_party" / "nanitecfw"))
 from rknano_fw import Image, rkcrc, TABLE_OFF, ENTRY_FIELDS
 STOCK_IMG = REPO / "assets" / "DP3_V137.img"
 ELF_PATH = REPO / "build" / "neo" / "platform" / "device" / "echo_device.elf"
-OUT_IMG = REPO / "release" / "DP3_V138.IMG"
+OUT_IMG = REPO / "release" / "NeoPod.IMG"
 
 sys.path.insert(0, str(TOOLS))
 from make_image import firmware_from_elf, overlay_from_elf, crc32
@@ -21,7 +21,7 @@ from make_image import firmware_from_elf, overlay_from_elf, crc32
 def build():
     global ELF_PATH, OUT_IMG
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--version', type=int, default=138)
+    parser.add_argument('--version', type=int, default=183)
     parser.add_argument('--no-rknano-copy', action='store_true', help='Do not emit duplicate RKNANOFW.IMG')
     parser.add_argument('--sd-output', type=Path)
     parser.add_argument('--elf', type=Path, default=ELF_PATH)
