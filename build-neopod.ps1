@@ -57,7 +57,12 @@ Run-Checked $FlasherPython @("$repoRoot/tools/build_neo_image.py", '--elf', "$bu
     '--core1-opus', "$build/platform/device/core1_opus.bin",
     '--sd-output', "$out/sd-card/.echo")
 
-$files = @(Get-Item -LiteralPath "$out/NeoPod.IMG") + @(Get-ChildItem -LiteralPath "$out/sd-card/.echo" -File)
+$companionNames = @('neo_scan.bin', 'neo_flac.bin', 'neo_mp3.bin', 'neo_aac.bin', 'neo_opus.bin', 'boot.rgb565')
+$files = @(Get-Item -LiteralPath "$out/NeoPod.IMG") + @(
+    foreach ($name in $companionNames) {
+        Get-Item -LiteralPath "$out/sd-card/.echo/$name"
+    }
+)
 $sums = foreach ($file in $files) {
     $relative = $file.FullName.Substring($out.Length + 1).Replace('\', '/')
     (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + $relative
