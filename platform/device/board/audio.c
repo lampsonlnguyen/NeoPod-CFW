@@ -642,12 +642,61 @@ void hal_audio_queue_next(const char *path, uint32_t token)
     audio_engine_queue_next(&engine, path, token);
 }
 
+#ifdef ECHO_BOARD_NEO
+/* NEOPOD_192K_PAUSE_DIAGNOSTICS_V1 */
+/* Snapshot after pausing: no SD writes during continuous 192 kHz playback.
+ * Saved to the existing preallocated /.echo/neo-audio.txt file. */
+static void neo_log_hires_pause(void)
+{
+    if (!engine_ready || path_rate != 192000u) {
+        return;
+    }
+    HalAudioStats audio = hal_audio_stats();
+    char report[768] = {0};
+    StringBuilder builder = string_builder_make(report, sizeof report);
+#define DIAG_FIELD(name, value) do { \
+        string_builder_append(&builder, "\n" name "="); \
+        string_builder_append_unsigned(&builder, (uint32_t)(value)); \
+    } while (0)
+    string_builder_append(&builder, "NeoPod 192k playback pause snapshot");
+    DIAG_FIELD("requested_dac_rate", audio.dac_rate);
+    /* NEOPOD_192K_CLOCK_PROBE_V1 */
+    /* Read-only snapshots; no changes to sample clock or I2S configuration. */
+    DIAG_FIELD("core1_flac_active", using_core1 ? 1u : 0u);
+    DIAG_FIELD("ring_capacity_frames", RING_FRAMES);
+    DIAG_FIELD("i2s_ckr_raw", register_read(0x40030008u));
+    DIAG_FIELD("i2s_txcr_raw", register_read(0x40030000u));
+    DIAG_FIELD("i2s_dmacr_raw", register_read(0x40030010u));
+    DIAG_FIELD("i2s_xfer_raw", register_read(0x4003001Cu));
+
+    DIAG_FIELD("cpu_mhz", hal_system_clock_mhz());
+    DIAG_FIELD("elapsed_us", audio.elapsed_us);
+    DIAG_FIELD("frames_consumed", audio.consumed);
+    DIAG_FIELD("frames_produced", audio.produced);
+    DIAG_FIELD("buffered_ms", audio.buffered_ms);
+    DIAG_FIELD("decode_max_us", audio.decode_max_us);
+    DIAG_FIELD("read_max_us", audio.read_max_us);
+    DIAG_FIELD("audio_underruns", audio.underruns);
+    DIAG_FIELD("output_underruns", audio.output_underruns);
+    DIAG_FIELD("decode_total_us", audio.decode_total_us);
+    DIAG_FIELD("read_total_us", audio.read_total_us);
+    DIAG_FIELD("decode_blocks", audio.blocks);
+#undef DIAG_FIELD
+    string_builder_append_char(&builder, '\n');
+    /* This file is preallocated by card_files_prepare() on Neo hardware. */
+    (void)hal_file_write("/.echo/neo-audio.txt", report, sizeof report);
+}
+#endif
+
 void hal_audio_pause(void)
 {
     ensure_engine();
     if (transferring && board_bluetooth_routed()) {
         stop_transfer();
         audio_engine_pause(&engine);
+#ifdef ECHO_BOARD_NEO
+    neo_log_hires_pause();
+#endif
         return;
     }
     if (transferring) {
@@ -656,6 +705,9 @@ void hal_audio_pause(void)
         dmac_suspend();
     }
     audio_engine_pause(&engine);
+#ifdef ECHO_BOARD_NEO
+    neo_log_hires_pause();
+#endif
 }
 
 void hal_audio_resume(void)

@@ -1,0 +1,44 @@
+File: DP3_V228.img
+Bytes: 13,631,492
+SHA256: 1ac1a5d2886e12eaa9b391ae0e987ae392d306855d3ca02f36b205d647a74d4b
+
+First 64 bytes:
+  00000000: 26 20 02 11 01 00 00 00 00 00 00 00 10 32 54 76
+  00000010: 52 6F 63 6B 63 68 69 70 00 00 00 00 00 00 00 00
+  00000020: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  00000030: 52 4B 6E 61 6E 6F 20 53 44 4B 20 31 2E 30 00 00
+
+I2S_CKR divider 1 (0x00013F3F): 1 exact aligned-or-unaligned hits
+  Offsets: 0x2A120
+
+I2S_CKR divider 3 (0x00033F3F): 1 exact aligned-or-unaligned hits
+  Offsets: 0x2A114
+
+I2S_CKR divider 7 (0x00073F3F): 1 exact aligned-or-unaligned hits
+  Offsets: 0x2A118
+
+I2S1_CKR MMIO address (0x40030008): 0 exact aligned-or-unaligned hits
+  Offsets: none
+
+96 kHz sample rate (0x00017700): 11 exact aligned-or-unaligned hits
+  Offsets: 0x2D5AC, 0x3E404, 0xEA64C, 0xEA694, 0xEA6D4, 0xEA70C, 0xEA758, 0x121444, 0x127A04, 0x14E4BC, 0x1567FC
+
+192 kHz sample rate (0x0002EE00): 6 exact aligned-or-unaligned hits
+  Offsets: 0x80C74, 0xEA658, 0xEA6A4, 0xEA6E4, 0xEA724, 0x14E49C
+
+24.576 MHz master clock (0x01770000): 9 exact aligned-or-unaligned hits
+  Offsets: 0xEA64B, 0xEA693, 0xEA6D3, 0xEA70B, 0xEA757, 0x121443, 0x127A03, 0x14E4BB, 0x1567FB
+
+Context around first 0x00033F3F at 0x2A114:
+  0002A0F0: 88 BF 10 22 00 20 52 1E 38 BF 70 47 D3 F8 28 C0
+  0002A100: 40 1C 41 F8 04 CB 52 1E F8 D2 70 47 00 00 02 40
+  0002A110: 00 00 03 40 3F 3F 03 00 3F 3F 07 00 80 38 01 00
+  0002A120: 3F 3F 01 00 00 28 08 BF 7C 4B 02 D0 01 28 08 BF
+  0002A130: 7B 4B 10 2A 88 BF 10 22 00 20 52 1E 38 BF 70 47
+  0002A140: 51 F8 04 CB 40 1C C3 F8 24 C0 52 1E F8 D2 70 47
+  0002A150: 2D E9 F0 41 44 F6 20 6C DD E9 06 67 00 28 08 BF
+  0002A160: 6E 4C 02 D0 01 28 08 BF 6D 4C 00 25 E5 61 01 25
+  0002A170: 25 62 25 6A 2D B1 BC F1 01 0C 1C BF 25 6A 00 2D
+  0002A180: F9 D1 5B 01 43 EA 47 23 17 2E 0F D0 43 F0 0F 03
+
+Caution: constants and their proximity alone do not show which register writes run for 192 kHz. Disassembly, call graph, and device measurements are required.

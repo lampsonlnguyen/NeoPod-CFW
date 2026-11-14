@@ -1,0 +1,204 @@
+﻿
+.\reference_i2s_thumb.bin:     file format binary
+
+
+Disassembly of section .data:
+
+0002a120 <.data>:
+   2a120:	3f3f      	subs	r7, #63	@ 0x3f
+   2a122:	0001      	movs	r1, r0
+   2a124:	2800      	cmp	r0, #0
+   2a126:	bf08      	it	eq
+   2a128:	4b7c      	ldreq	r3, [pc, #496]	@ (0x2a31c)
+   2a12a:	d002      	beq.n	0x2a132
+   2a12c:	2801      	cmp	r0, #1
+   2a12e:	bf08      	it	eq
+   2a130:	4b7b      	ldreq	r3, [pc, #492]	@ (0x2a320)
+   2a132:	2a10      	cmp	r2, #16
+   2a134:	bf88      	it	hi
+   2a136:	2210      	movhi	r2, #16
+   2a138:	2000      	movs	r0, #0
+   2a13a:	1e52      	subs	r2, r2, #1
+   2a13c:	bf38      	it	cc
+   2a13e:	4770      	bxcc	lr
+   2a140:	f851 cb04 	ldr.w	ip, [r1], #4
+   2a144:	1c40      	adds	r0, r0, #1
+   2a146:	f8c3 c024 	str.w	ip, [r3, #36]	@ 0x24
+   2a14a:	1e52      	subs	r2, r2, #1
+   2a14c:	d2f8      	bcs.n	0x2a140
+   2a14e:	4770      	bx	lr
+   2a150:	e92d 41f0 	stmdb	sp!, {r4, r5, r6, r7, r8, lr}
+   2a154:	f644 6c20 	movw	ip, #20000	@ 0x4e20
+   2a158:	e9dd 6706 	ldrd	r6, r7, [sp, #24]
+   2a15c:	2800      	cmp	r0, #0
+   2a15e:	bf08      	it	eq
+   2a160:	4c6e      	ldreq	r4, [pc, #440]	@ (0x2a31c)
+   2a162:	d002      	beq.n	0x2a16a
+   2a164:	2801      	cmp	r0, #1
+   2a166:	bf08      	it	eq
+   2a168:	4c6d      	ldreq	r4, [pc, #436]	@ (0x2a320)
+   2a16a:	2500      	movs	r5, #0
+   2a16c:	61e5      	str	r5, [r4, #28]
+   2a16e:	2501      	movs	r5, #1
+   2a170:	6225      	str	r5, [r4, #32]
+   2a172:	6a25      	ldr	r5, [r4, #32]
+   2a174:	b12d      	cbz	r5, 0x2a182
+   2a176:	f1bc 0c01 	subs.w	ip, ip, #1
+   2a17a:	bf1c      	itt	ne
+   2a17c:	6a25      	ldrne	r5, [r4, #32]
+   2a17e:	2d00      	cmpne	r5, #0
+   2a180:	d1f9      	bne.n	0x2a176
+   2a182:	015b      	lsls	r3, r3, #5
+   2a184:	ea43 2347 	orr.w	r3, r3, r7, lsl #9
+   2a188:	2e17      	cmp	r6, #23
+   2a18a:	d00f      	beq.n	0x2a1ac
+   2a18c:	f043 030f 	orr.w	r3, r3, #15
+   2a190:	6023      	str	r3, [r4, #0]
+   2a192:	6063      	str	r3, [r4, #4]
+   2a194:	2900      	cmp	r1, #0
+   2a196:	bf16      	itet	ne
+   2a198:	4611      	movne	r1, r2
+   2a19a:	4862      	ldreq	r0, [pc, #392]	@ (0x2a324)
+   2a19c:	f7ff fe5b 	blne	0x29e56
+   2a1a0:	60a0      	str	r0, [r4, #8]
+   2a1a2:	4861      	ldr	r0, [pc, #388]	@ (0x2a328)
+   2a1a4:	6160      	str	r0, [r4, #20]
+   2a1a6:	2000      	movs	r0, #0
+   2a1a8:	e8bd 81f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, pc}
+   2a1ac:	f244 0c1f 	movw	ip, #16415	@ 0x401f
+   2a1b0:	ea43 030c 	orr.w	r3, r3, ip
+   2a1b4:	6023      	str	r3, [r4, #0]
+   2a1b6:	6063      	str	r3, [r4, #4]
+   2a1b8:	e7ec      	b.n	0x2a194
+   2a1ba:	b510      	push	{r4, lr}
+   2a1bc:	b1f8      	cbz	r0, 0x2a1fe
+   2a1be:	2802      	cmp	r0, #2
+   2a1c0:	d033      	beq.n	0x2a22a
+   2a1c2:	2803      	cmp	r0, #3
+   2a1c4:	bf18      	it	ne
+   2a1c6:	bd10      	popne	{r4, pc}
+   2a1c8:	2202      	movs	r2, #2
+   2a1ca:	2100      	movs	r1, #0
+   2a1cc:	4608      	mov	r0, r1
+   2a1ce:	f001 fde9 	bl	0x2bda4
+   2a1d2:	2202      	movs	r2, #2
+   2a1d4:	4611      	mov	r1, r2
+   2a1d6:	2000      	movs	r0, #0
+   2a1d8:	f001 fde4 	bl	0x2bda4
+   2a1dc:	2202      	movs	r2, #2
+   2a1de:	2104      	movs	r1, #4
+   2a1e0:	2000      	movs	r0, #0
+   2a1e2:	f001 fddf 	bl	0x2bda4
+   2a1e6:	2202      	movs	r2, #2
+   2a1e8:	2101      	movs	r1, #1
+   2a1ea:	2000      	movs	r0, #0
+   2a1ec:	f001 fdda 	bl	0x2bda4
+   2a1f0:	2202      	movs	r2, #2
+   2a1f2:	2103      	movs	r1, #3
+   2a1f4:	e8bd 4010 	ldmia.w	sp!, {r4, lr}
+   2a1f8:	2000      	movs	r0, #0
+   2a1fa:	f001 bdd3 	b.w	0x2bda4
+   2a1fe:	2202      	movs	r2, #2
+   2a200:	210f      	movs	r1, #15
+   2a202:	2000      	movs	r0, #0
+   2a204:	f001 fdce 	bl	0x2bda4
+   2a208:	2202      	movs	r2, #2
+   2a20a:	210d      	movs	r1, #13
+   2a20c:	2000      	movs	r0, #0
+   2a20e:	f001 fdc9 	bl	0x2bda4
+   2a212:	2202      	movs	r2, #2
+   2a214:	210b      	movs	r1, #11
+   2a216:	2000      	movs	r0, #0
+   2a218:	f001 fdc4 	bl	0x2bda4
+   2a21c:	2202      	movs	r2, #2
+   2a21e:	210c      	movs	r1, #12
+   2a220:	e8bd 4010 	ldmia.w	sp!, {r4, lr}
+   2a224:	2000      	movs	r0, #0
+   2a226:	f001 bdbd 	b.w	0x2bda4
+   2a22a:	2201      	movs	r2, #1
+   2a22c:	2100      	movs	r1, #0
+   2a22e:	4610      	mov	r0, r2
+   2a230:	f001 fdb8 	bl	0x2bda4
+   2a234:	2201      	movs	r2, #1
+   2a236:	2102      	movs	r1, #2
+   2a238:	4610      	mov	r0, r2
+   2a23a:	f001 fdb3 	bl	0x2bda4
+   2a23e:	2201      	movs	r2, #1
+   2a240:	4611      	mov	r1, r2
+   2a242:	4610      	mov	r0, r2
+   2a244:	f001 fdae 	bl	0x2bda4
+   2a248:	2201      	movs	r2, #1
+   2a24a:	2103      	movs	r1, #3
+   2a24c:	4610      	mov	r0, r2
+   2a24e:	f001 fda9 	bl	0x2bda4
+   2a252:	2201      	movs	r2, #1
+   2a254:	2100      	movs	r1, #0
+   2a256:	4610      	mov	r0, r2
+   2a258:	f001 fda4 	bl	0x2bda4
+   2a25c:	2201      	movs	r2, #1
+   2a25e:	2102      	movs	r1, #2
+   2a260:	4610      	mov	r0, r2
+   2a262:	f001 fd9f 	bl	0x2bda4
+   2a266:	2201      	movs	r2, #1
+   2a268:	4611      	mov	r1, r2
+   2a26a:	4610      	mov	r0, r2
+   2a26c:	f001 fd9a 	bl	0x2bda4
+   2a270:	2201      	movs	r2, #1
+   2a272:	e8bd 4010 	ldmia.w	sp!, {r4, lr}
+   2a276:	2103      	movs	r1, #3
+   2a278:	4610      	mov	r0, r2
+   2a27a:	f001 bd93 	b.w	0x2bda4
+   2a27e:	b510      	push	{r4, lr}
+   2a280:	b1f8      	cbz	r0, 0x2a2c2
+   2a282:	2802      	cmp	r0, #2
+   2a284:	d033      	beq.n	0x2a2ee
+   2a286:	2803      	cmp	r0, #3
+   2a288:	bf18      	it	ne
+   2a28a:	bd10      	popne	{r4, pc}
+   2a28c:	2200      	movs	r2, #0
+   2a28e:	4611      	mov	r1, r2
+   2a290:	4610      	mov	r0, r2
+   2a292:	f001 fd87 	bl	0x2bda4
+   2a296:	2200      	movs	r2, #0
+   2a298:	2102      	movs	r1, #2
+   2a29a:	4610      	mov	r0, r2
+   2a29c:	f001 fd82 	bl	0x2bda4
+   2a2a0:	2200      	movs	r2, #0
+   2a2a2:	2104      	movs	r1, #4
+   2a2a4:	4610      	mov	r0, r2
+   2a2a6:	f001 fd7d 	bl	0x2bda4
+   2a2aa:	2200      	movs	r2, #0
+   2a2ac:	2101      	movs	r1, #1
+   2a2ae:	4610      	mov	r0, r2
+   2a2b0:	f001 fd78 	bl	0x2bda4
+   2a2b4:	2200      	movs	r2, #0
+   2a2b6:	e8bd 4010 	ldmia.w	sp!, {r4, lr}
+   2a2ba:	2103      	movs	r1, #3
+   2a2bc:	4610      	mov	r0, r2
+   2a2be:	f001 bd71 	b.w	0x2bda4
+   2a2c2:	2200      	movs	r2, #0
+   2a2c4:	210f      	movs	r1, #15
+   2a2c6:	4610      	mov	r0, r2
+   2a2c8:	f001 fd6c 	bl	0x2bda4
+   2a2cc:	2200      	movs	r2, #0
+   2a2ce:	210d      	movs	r1, #13
+   2a2d0:	4610      	mov	r0, r2
+   2a2d2:	f001 fd67 	bl	0x2bda4
+   2a2d6:	2200      	movs	r2, #0
+   2a2d8:	210b      	movs	r1, #11
+   2a2da:	4610      	mov	r0, r2
+   2a2dc:	f001 fd62 	bl	0x2bda4
+   2a2e0:	2200      	movs	r2, #0
+   2a2e2:	e8bd 4010 	ldmia.w	sp!, {r4, lr}
+   2a2e6:	210c      	movs	r1, #12
+   2a2e8:	4610      	mov	r0, r2
+   2a2ea:	f001 bd5b 	b.w	0x2bda4
+   2a2ee:	2200      	movs	r2, #0
+   2a2f0:	4611      	mov	r1, r2
+   2a2f2:	2001      	movs	r0, #1
+   2a2f4:	f001 fd56 	bl	0x2bda4
+   2a2f8:	2200      	movs	r2, #0
+   2a2fa:	2102      	movs	r1, #2
+   2a2fc:	2001      	movs	r0, #1
+   2a2fe:	Address 0x2a2fe is out of bounds.
+
