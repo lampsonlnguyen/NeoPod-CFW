@@ -40,6 +40,23 @@
 
 ---
 
+## Sandbox development builds
+
+On the `sandbox` branch, `build-neopod.ps1` overwrites **`release/NeoPod.IMG`** with the latest build. No manual version increments, versioned ZIPs, or duplicate `RKNANOFW.IMG` are created by this development script. The firmware header retains a fixed compatibility value; the filename does not determine the firmware contents.
+
+```powershell
+cd C:\\github\\NeoPod-CFW
+$env:PATH = "C:\\arm-toolchain\\bin;$env:PATH"
+powershell -NoProfile -ExecutionPolicy Bypass -File .\\build-neopod.ps1
+python .\\flash-neo.py .\\release\\NeoPod.IMG
+```
+
+Keep **`release/NeoPod.IMG`**, **`release/SHA256SUMS.txt`**, and all six files in **`release/sd-card/.echo/`** together when flashing. The matching SHA-256 manifest is regenerated on every build and guards against mixing firmware and decoder binaries. The helper and production ZIP packagers are not run by the sandbox build; stable release packaging remains a separate operation. Do not flash unless compilation and packaging have succeeded.
+
+Production/versioned instructions below describe the stable release workflow, not sandbox development.
+
+---
+
 ## 📥 Installation
 
 ### Method 1: First-Time Install (From Stock Firmware)
