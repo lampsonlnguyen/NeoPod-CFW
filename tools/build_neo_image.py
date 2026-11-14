@@ -1,6 +1,6 @@
 """Pack neo_diag.elf into a valid Fosi DAP Neo firmware update image.
 
-Takes stock DP3_V137.img as template, substitutes Module 0 with neo_diag,
+Takes a verified stock Fosi template (V155 by default), substitutes Module 0,
 updates module 0 metadata, sets version/date, syncs header copy, and fixes CRC32.
 """
 import argparse
@@ -11,7 +11,12 @@ TOOLS = Path(__file__).resolve().parent
 REPO = TOOLS.parent
 sys.path.insert(0, str(REPO / "third_party" / "nanitecfw"))
 from rknano_fw import Image, rkcrc, TABLE_OFF, ENTRY_FIELDS
-STOCK_IMG = REPO / "assets" / "DP3_V137.img"
+STOCK_TEMPLATES = {
+    "v137": (REPO / "assets" / "DP3_V137.img",
+             "fcc1cd3e35b46f1f8dbcb8da39fcc5eb3f1d469cdfade5e9c6ea3bd71ac6deef"),
+    "v155": (REPO / "assets" / "DP3_V155.img",
+             "4713a2eb4b523d49ad003ac2df159c1c596339aef1a9a060e6ea6bbbf18e1332"),
+}
 ELF_PATH = REPO / "build" / "neo" / "platform" / "device" / "echo_device.elf"
 OUT_IMG = REPO / "release" / "NeoPod.IMG"
 
@@ -21,6 +26,8 @@ from make_image import firmware_from_elf, overlay_from_elf, crc32
 def build():
     global ELF_PATH, OUT_IMG
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--stock-template', choices=tuple(STOCK_TEMPLATES), default='v155',
+                        help='Verified Fosi base image; default v155, v137 for rollback')
     parser.add_argument('--version', type=int, default=183)
     parser.add_argument('--no-rknano-copy', action='store_true', help='Do not emit duplicate RKNANOFW.IMG')
     parser.add_argument('--sd-output', type=Path)
@@ -37,13 +44,17 @@ def build():
         raise ValueError('Neo update version must be 138..599')
     if args.sd_output:
         args.sd_output.mkdir(parents=True, exist_ok=True)
-    print(f"Reading stock image {STOCK_IMG}...")
-    stock_data = STOCK_IMG.read_bytes()
-    if hashlib.sha256(stock_data).hexdigest() != 'fcc1cd3e35b46f1f8dbcb8da39fcc5eb3f1d469cdfade5e9c6ea3bd71ac6deef':
-        raise ValueError('Unexpected stock template SHA-256')
+    stock_path, expected_sha = STOCK_TEMPLATES[args.stock_template]
+    print(f"Reading verified {args.stock_template} stock template {stock_path}...")
+    stock_data = stock_path.read_bytes()
+    if hashlib.sha256(stock_data).hexdigest() != expected_sha:
+        raise ValueError(f'Unexpected {args.stock_template} stock template SHA-256')
     im = Image(stock_data)
     if not im.header_copy_ok() or im.crc_stored() != im.crc_calc():
         raise ValueError('Stock template integrity check failed')
+    expected_fw_len = {'v137': 0xC94000, 'v155': 0xCB0000}[args.stock_template]
+    if im.fw_len != expected_fw_len or len(im.modules) != 82:
+        raise ValueError('Unexpected stock module layout / firmware length')
     
     print(f"Reading ELF {ELF_PATH}...")
     elf_bytes = ELF_PATH.read_bytes()
@@ -90,7 +101,10 @@ def build():
         packed = b'EOVL' + struct.pack('<III', len(overlay), crc32(overlay[16:]), 0) + overlay[16:]
         if args.sd_output:
             (args.sd_output / 'neo_scan.bin').write_bytes(packed)
-        im.d[0xC94400:0xC94400 + len(packed)] = packed
+        # On V155, 0xC94400 is part of the live stock firmware payload,
+        # not spare trailer space. Keep this auxiliary on SD instead.
+        if args.stock_template == 'v137':
+            im.d[0xC94400:0xC94400 + len(packed)] = packed
     programs = [
         (args.core1_mp3, 0xCB9400, 'neo_mp3.bin'),
         (args.core1_flac, 0xCD9600, 'neo_flac.bin'),
@@ -105,7 +119,9 @@ def build():
             packed = b'EC1M' + struct.pack('<III', len(program), crc32(program), 0) + bytes(496) + program
             if args.sd_output:
                 (args.sd_output / name).write_bytes(packed)
-            if offset is not None:
+            # Legacy V137 keeps redundant embedded copies in trailer space.
+            # V155 uses that address range for official firmware data: never overwrite.
+            if args.stock_template == 'v137' and offset is not None:
                 im.d[offset:offset + len(packed)] = packed
 
     # Update BCD build date: 2026-11-01
@@ -114,7 +130,7 @@ def build():
     # Update version field in header at 0x4 (version 1.38 = 0x01, 0x26 = 38)
     struct.pack_into("<HH", im.d, 0x4, 0x0100, args.version - 100)
     
-    # Finalize: copy header to fw_size (0xc94000) and calculate CRC
+    # Finalize: copy header to the selected template's fw_len and calculate CRC
     im.finalize()
     
     if len(im.d) != len(stock_data) or not im.header_copy_ok() or im.crc_stored() != im.crc_calc():
