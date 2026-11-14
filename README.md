@@ -42,12 +42,14 @@
 
 ## Sandbox development builds
 
-On the `sandbox` branch, `build-neopod.ps1` overwrites **`release/NeoPod.IMG`** with the latest build. No manual version increments, versioned ZIPs, or duplicate `RKNANOFW.IMG` are created by this development script. The firmware header retains a fixed compatibility value; the filename does not determine the firmware contents.
+On the `sandbox` branch, `build-neopod.ps1` overwrites **`release/NeoPod.IMG`** with the latest build. **By default, this now uses the verified official Fosi V1.5.5 base** (`assets/DP3_V155.img`). Use `-StockTemplate v137` to build with the previous V1.3.7 base without changing tracked files. The newer V155 template has a smaller Module 0 slot, so image packing intentionally stops if the NeoPod code does not fit. On V155, companion payloads are provided only under `release/sd-card/.echo/`, never embedded into offsets that V155 uses as firmware. This base switch does not import Fosi's proprietary audio playback implementation or guarantee a 192 kHz fix. No manual version increments, versioned ZIPs, or duplicate `RKNANOFW.IMG` are created by this development script. The firmware header retains a fixed compatibility value; the filename does not determine the firmware contents.
 
 ```powershell
 cd C:\\github\\NeoPod-CFW
 $env:PATH = "C:\\arm-toolchain\\bin;$env:PATH"
 powershell -NoProfile -ExecutionPolicy Bypass -File .\\build-neopod.ps1
+# Rollback template if needed:
+# powershell -NoProfile -ExecutionPolicy Bypass -File .\\build-neopod.ps1 -StockTemplate v137
 python .\\flash-neo.py .\\release\\NeoPod.IMG
 ```
 
