@@ -14,3 +14,12 @@ log/
 release/RKNANOFW.IMG
 
 build-cleanup-backup-*/
+
+# Sandbox build products: regenerate locally instead of committing firmware binaries.
+release/NeoPod.IMG
+release/DP3_V*.IMG
+release/NeoPod-v*.zip
+release/SHA256SUMS.txt
+release/FLASHER-SHA256SUMS.txt
+release/sd-card/.echo/
+release/RKNANOFW.IMG
