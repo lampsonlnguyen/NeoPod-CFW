@@ -652,7 +652,7 @@ static void neo_log_hires_pause(void)
         return;
     }
     HalAudioStats audio = hal_audio_stats();
-    char report[768] = {0};
+    char report[1024] = {0};
     StringBuilder builder = string_builder_make(report, sizeof report);
 #define DIAG_FIELD(name, value) do { \
         string_builder_append(&builder, "\n" name "="); \
@@ -668,6 +668,19 @@ static void neo_log_hires_pause(void)
     DIAG_FIELD("i2s_txcr_raw", register_read(0x40030000u));
     DIAG_FIELD("i2s_dmacr_raw", register_read(0x40030010u));
     DIAG_FIELD("i2s_xfer_raw", register_read(0x4003001Cu));
+    /* Read back the actual CRU selectors/dividers rather than assuming the
+     * fixed 24.576 MHz audio table is what the hardware received. */
+    DIAG_FIELD("cru_clksel_10_raw", register_read(CRU_BASE + 0x10u));
+    DIAG_FIELD("cru_clksel_20_raw", register_read(CRU_BASE + 0x20u));
+    /* Current SoC ACODEC registers; read-only, no clock changes. */
+    DIAG_FIELD("acodec_m4_raw", register_read(0x40090204u));
+    DIAG_FIELD("acodec_m5_raw", register_read(0x40090208u));
+    DIAG_FIELD("acodec_m6_raw", register_read(0x4009020Cu));
+    DIAG_FIELD("acodec_m7_raw", register_read(0x40090210u));
+    /* DMA channel 5: capture status at pause to correlate ring progress. */
+    DIAG_FIELD("dma_channel_sar_raw", register_read(0x600001B8u));
+    DIAG_FIELD("dma_channel_cfg_low_raw", register_read(0x600001F8u));
+    DIAG_FIELD("dma_channel_enable_raw", register_read(0x600003A0u));
 
     DIAG_FIELD("cpu_mhz", hal_system_clock_mhz());
     DIAG_FIELD("elapsed_us", audio.elapsed_us);
