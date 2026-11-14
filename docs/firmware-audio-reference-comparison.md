@@ -9,7 +9,16 @@
 
 ## What we have verified
 
-The V228 Thumb disassembly selects different sample-rate table indices, but the verified V228 rate entries for **96 kHz and 192 kHz** both use `ACODEC_M4/M5/M6/M7 = 00/30/19/09`. The I2S clock register values are `0x00033F3F` (96 kHz) and `0x00013F3F` (192 kHz). These agree with NeoPod's current values. Thus changing those constants without more evidence is **not** justified.
+Disassembly and direct table extraction from all three supplied images established these **distinct** rate configurations:
+
+| Rate | I2S_CKR | ACODEC M4 | M5 | M6 | M7 field |
+| --- | --- | --- | --- | --- | --- |
+| 96 kHz | `0x00033F3F` | `0x00` | `0x30` | `0x19` | `0x09` |
+| 192 kHz | `0x00013F3F` | `0x04` | `0x49` | `0x19` | `0x03` |
+
+The V228 selection function at image offset `0x29E56` selects table 2/index 3 for 96 kHz and table 1/index 4 for 192 kHz. The indexed table rows are identical in stock V137, official V155 and Polorsk V228. For V155/V228, the 96 kHz row begins at file offset `0x47A04` and the 192 kHz row at `0x47AAC`. V137 rows begin at `0x476E8` and `0x47790` respectively. Table entries have 24-byte stride; the last four little-endian words specify the ACODEC register values.
+
+NeoPod's prior `dac.c` incorrectly reused the 96 kHz ACODEC row at 192 kHz. We changed only the 192 kHz ACODEC row to `04/49/19/03` on `sandbox`, leaving I2S and DMA unchanged. This is a source-level correction, **not a hardware-verified playback fix**.
 
 User device tests: 192 kHz WAV and FLAC are both slow, while 96 kHz FLAC works. This is evidence against a *FLAC decoder-only* explanation. DMA ring-wrap accounting has not yet been established; the apparent playback throughput in previous pause logs is not a trustworthy sample-clock measurement.
 
